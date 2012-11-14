@@ -46,7 +46,7 @@ abstract class FlickreeApi {
    * 
    * Build the URL based on the params, return the result
    * @return array of FlickrPhoto objects
-   * @TODO: implement random, implement display attribute, how does getPhoto set the size
+   * TODO: implement random, implement display attribute, how does getPhoto set the size
    *
    */
   public function callAPI() {
@@ -79,11 +79,51 @@ abstract class FlickreeApi {
         $result = unserialize(file_get_contents($url));
       else if ($format == 'json')
         $result = json_decode(file_get_contents($url), true);
-      
+
       if (!$result)
         throw new Exception('Could not connect');
     } catch (Exception $e) {
-      return array('status' => 'failure', 'msg' => $e->getFile() . ' could not proccess webservice');
+      $flickree_options = get_option('flickree_options');
+      
+      if($flickree_options['report']){
+
+        // Hash of report to prevent spamming the developer (me!)
+        $error_id = md5($url);
+        if ( (!isset($_SESSION['flickree']['report'])) || (!is_array($_SESSION['flickree']['report'])) ) {
+          $_SESSION['flickree']['report'] = array();
+        }
+        if (in_array($error_id, $_SESSION['flickree']['report']) ) {
+          $mailsent= '. Email already sent to developer';
+        }
+        else {
+          $serverinfo = print_r($_SERVER, true);
+          $file = $e->getFile();
+          $style = 'style=\'font-size:12px; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;\'';
+
+$msg = <<<EOF
+<h1>Flickree error report</h1>
+<p $style><strong>Error ID </strong>$error_id</p>
+<p $style><strong>URL </strong>$url</p>
+<p $style><strong>Server </strong><pre $style>$serverinfo</pre></p>
+<p $style><strong>file </strong>$file</p>
+EOF;
+
+          $headers = array();
+          if ($cc = $flickree_options['cc']){
+            $headers[] = 'Cc: '.$cc;
+          }
+          add_filter('wp_mail_content_type', create_function('', 'return "text/html";'));
+          if( wp_mail( 'flickree@bcooling.com.au', 'flickree connection error report', $msg, $headers ) ){
+            $mailsent= '. Email sent to developer';
+            $_SESSION['flickree']['report'][] = $error_id;
+          }
+
+        }
+
+      } // endif send email report
+
+      $mailsent = (isset($mailsent)) ? $mailsent : '';
+      return array('status' => 'failure', 'msg' => $e->getFile() . ' could not proccess webservice' . $mailsent);
     }
 
     switch ($this->method) {

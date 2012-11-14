@@ -71,33 +71,74 @@ class FlcAdmin {
     add_options_page(FLICKREE_PLUGIN_NAME, FLICKREE_PLUGIN_NAME, 'administrator', FLICKREE_FILE, 
       array($this, 'options_page_callback'));
   }
-  
-  public function flickree_api_key_callback(){
-      print_f('<input name="%1$s" id="%1$s" type="text" value="%2$s" />', 
-              'flickree_api_key',
-              get_option('flickree_api_key'));
-  }
-  
+    
   public function options_page_callback(){
     ?>
-    <div class="wrap">
+    <style>
+    /* Sorry for the inline style */
+    #flickree-wrap .metabox-holder {
+      width:50%;
+    }
+    #flickree-wrap label {
+      width: 240px; display: block; float: left; margin: 10px 0 5px 0;
+    }
+    #flickree-wrap input {
+      margin:10px 0 5px 0;
+    }
+    #flickree-wrap p {
+      clear:both; margin:0; padding:0;
+    }
+    #flickree-wrap .button-primary {
+      margin-bottom:5px;
+    }
+    </style>
+    <script>
+(function($){
+  $(function(){
+    var $report = $('#flickree_options\\[report\\]'),
+        $cc = $('#cc-wrap');
+    $report.bind('change.report', function(){
+      if($(this).is(':checked')){
+        $cc.slideDown();
+      } else {
+        $cc.slideUp();
+      }
+    });
+  });
+})(jQuery)
+    </script>
+    <div class="wrap" id="flickree-wrap">
       <div class="icon32" id="icon-tools"><br /></div>
       <h2>Flickree</h2>
-      <div class="metabox-holder" style="width:50%">
+      <div class="metabox-holder">
         <div class="postbox">
           <h3 class="hndle" style="cursor:inherit"><span>API Key</span></h3>
           <div class="inside">
             <form method="post" action="options.php">
               <?php 
               settings_fields('flickree_options');
-              $default_options = array('api_key'=>'Please insert an API Key');
+              $default_options = array( 'api_key'=>'Please insert an API Key', 'cc'=>get_option('admin_email') );
               $flickree_options = get_option('flickree_options', $default_options);
+              $apikey = ($flickree_options['apikey']) ? $flickree_options['apikey'] : '';
+              $checked = ($flickree_options['report']) ? 'checked="checked"' : '';
+              $cc = ($flickree_options['cc']) ? $flickree_options['cc'] : '';
+              $visible = ($checked) ? '' : 'style="display:none"';
               ?>
-              <label>Enter key here:</label>
-              <input name="flickree_options[apikey]" id="flickree_options[apikey]" type="text" 
-                     value="<?php echo ($flickree_options['apikey']) ? $flickree_options['apikey'] : ''; ?>" size="48" style="margin:10px 0" />
-              <br />
-              <input name="submit" type="submit" class="button-primary" value="<?php _e('Save') ?>" />
+              <p>
+                <label>Enter key here:</label>
+                <?php printf('<input name="flickree_options[apikey]" id="flickree_options[apikey]" type="text" value="%s" size="48" />', $apikey); ?>
+              </p>
+              <p>
+                <label>Report connection errors to developer:</label>
+                <?php printf('<input name="flickree_options[report]" id="flickree_options[report]" type="checkbox" value="report" %s />', $checked); ?>
+              </p>
+              <p id="cc-wrap" <?php echo $visible; ?>>
+                <label>Copy (CC) error report to email:</label>
+                <?php printf('<input name="flickree_options[cc]" id="flickree_options[cc]" type="text" value="%s" size="48" />', $cc); ?>
+              </p>
+              <p>
+              <input name="submit" type="submit" class="button-primary" value="<?php _e('Save') ?>"  />
+              </p>
             </form>
           </div>
         </div>
@@ -106,7 +147,7 @@ class FlcAdmin {
     <?php
   }
     
-  // @TODO: Remove option from db for api key
+  // TODO: Remove option from db for api key
   public function my_register_deactivation_hook(){}  
   
 }

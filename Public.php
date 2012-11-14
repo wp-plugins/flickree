@@ -40,9 +40,11 @@ class FlcPublic {
     $api_key = $flickree_options['apikey'];
     $tpl = (isset($atts['template'])) ? $atts['template'] : 'default';
     
-    // type is required
+    // validate type attribute
     if (! isset($atts['type']) ) return 'Requires an API type';
-    
+    $requiredTypes = array('photo', 'search', 'group', 'gallery', 'photoset');
+    if (! in_array($atts['type'], $requiredTypes) ) return 'Type must be either ' . implode(', ', $requiredTypes);
+
     // instantiate relevant class photoset.class.php, photo.class.php, search.class.php to retrieve photos....	
     $classType = ucfirst($atts['type']);
     require_once('classes/' . $classType . '.class.php');
@@ -60,7 +62,7 @@ class FlcPublic {
     
     $i=1; foreach ($photos['data'] as $photo) {
       // Cast tags (space sperated list) as array
-      $photo['tags'] = explode(' ', $photo['tags']);
+      if (is_string($photo['tags'])) $photo['tags'] = explode(' ', $photo['tags']);
       $photo['index'] = $i; // Add counter variable for template
       $m = new Mustache;
       $output.= $m->render(file_get_contents(FLICKREE_DIR_PATH . '/templates/' . $tpl . '.mustache'), $photo);
